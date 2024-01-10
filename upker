@@ -1,12 +1,12 @@
 #!/bin/bash
 
 ## User Configuration
+BASE_PATH="$HOME/Kernel"
+ARCHIVE_FORMAT="tar.xz"
+BOOT_DIR="/boot"
+GRUB_DIR="/boot/grub"
+ARCHIVE_DIR="$BASE_PATH/Archives"
 COLORS=true
-
-BASE_PATH="$HOME/Kernel" ## MANDATORY
-ARCHIVE_FORMAT="tar.xz"  ## MANDATORY
-BOOT_DIR="/boot"         ## MANDATORY
-GRUB_DIR="/boot/grub"    ## MANDATORY
 ## User Configuration
 
 ## Values set by script, do NOT modify
@@ -35,6 +35,7 @@ CLANG=false
 SBCTL_PRESENT=false
 SIGN=false
 AUTOUPDATE=false
+FORCE=false
 
 RESET_C=""
 RED_C=""
@@ -160,6 +161,10 @@ ${BLUE_C}Flags${RESET_C}:
                                 the compiler used and uses the information to configure,
                                 build and install the newer kernel. No guarantees it will
                                 work 100% correctly. Overwrites every other flag/option.
+                                
+    --force                     Will force execution of subsequent steps after error.
+                                Not recommended since most steps rely on the successful
+                                completion of previous ones.
 
 ${BLUE_C}Other${RESET_C}:
     --help                      Show this text and exit.
@@ -205,6 +210,8 @@ handle_args()
       --sign)           SIGN=true;                      shift ;;
 
       --autoupdate)     AUTOUPDATE=true;                shift ;;
+    
+      --force)          FORCE=true;                     shift ;;
 
       -v|--version)     echo $SCRIPT_VERSION;           exit 0 ;;
 
@@ -262,20 +269,18 @@ set_variables()
   if command -v sbctl &> /dev/null; then
     SBCTL_PRESENT=true
   fi
-
+  
   if [[ "$AUTOUPDATE" = true ]]; then
     auto_set_vars
   fi
 
-  KERNEL_ARCHIVE="linux-$KERNEL_VERSION_NUMBER.$ARCHIVE_FORMAT"
-
-  local arr=()
-  local i
-  
+  local i arr=()
   IFS='.' read -ra ADDR <<< "$KERNEL_VERSION_NUMBER"
   for i in "${ADDR[@]}"; do
     arr+=("$i")
   done
+
+  KERNEL_ARCHIVE="linux-$KERNEL_VERSION_NUMBER.$ARCHIVE_FORMAT"
 
   if [[ "${#arr[@]}" = 2 ]]; then
       KERNEL_VERSION_NUMBER="$KERNEL_VERSION_NUMBER.0"
@@ -348,13 +353,23 @@ set_req_filenames()
 
 auto_set_vars()
 {
-  local latestVersion currentVer currentSuff 
+  local latestVersion cmpLatest currentVer currentSuff 
 
   IFS='-' read -r currentVer currentSuff <<< "$(uname -r)"
 
   latestVersion=$(curl -s https://www.kernel.org | grep -A1 latest_link | tail -n1 | grep -Eo '>[^<]+' | grep -Eo '[^>]+')
 
-  if [[ "$latestVersion" = "$currentVer" ]]; then
+  local i arr=()
+  IFS='.' read -ra ADDR <<< "$latestVersion"
+  for i in "${ADDR[@]}"; do
+    arr+=("$i")
+  done
+
+  if [[ "${#arr[@]}" = 2 ]]; then
+      cmpLatest="$latestVersion.0"
+  fi
+
+  if [[ "$cmpLatest" = "$currentVer" ]]; then
     print_header "You're already using the latest version \"${GREEN_C}$latestVersion${RESET_C}\"!"
     exit 0
   fi
@@ -460,11 +475,11 @@ prompt_clean_kernel()
 prepare_build()
 {
   local kernelFamily="v${KERNEL_VERSION_NUMBER:0:1}.x"
-  local archiveDir="$BASE_PATH/$KERNEL_ARCHIVE"
+  local archiveDir="$ARCHIVE_DIR/$KERNEL_ARCHIVE"
 
   if [[ ! -f "$archiveDir" ]]; then
     print_header "${BLUE_C}Downloading archive ${YELLOW_C}\"$KERNEL_ARCHIVE\"${RESET_C}"
-    wget -P "$BASE_PATH" https://cdn.kernel.org/pub/linux/kernel/"$kernelFamily"/"$KERNEL_ARCHIVE" || error $?
+    wget -P "$ARCHIVE_DIR" https://cdn.kernel.org/pub/linux/kernel/"$kernelFamily"/"$KERNEL_ARCHIVE" || error $?
   fi 
 
   if [[ -d "$BUILD_DIR" ]]; then
@@ -635,7 +650,13 @@ sign_image()
 
 error()
 {
-  print_header "${RED_C}A FUNCTION EXITED WITH CODE $1, ABORTING..${RESET_C}"
+  print_header "${RED_C}A FUNCTION EXITED WITH CODE $1${RESET_C}"
+  
+  if [[ ${FORCE} = true ]]; then
+      return
+  fi
+  
+  print_header "${RED_C}ABORTING..${RESET_C}"
   exit 2;
 }
 
