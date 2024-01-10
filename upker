@@ -45,7 +45,7 @@ CYAN_C=""
 ## Values set by script, do NOT modify
 
 ## Version
-SCRIPT_VERSION="2023.1.18"
+SCRIPT_VERSION="2023.7.1"
 ## Version
 
 print_help()
@@ -71,7 +71,7 @@ If no configuration file is present, the configuration will have to manually be 
 patchdir (absolute path, no ~/)
 patch name (just the name, without a number or extension)
   ${BLUE_C}Ex:${RESET_C} 
-  If the directory is ~/Kernel/patches, and the required patches are 0001-first.patch and folder/0002-second.patch
+  If the directory is ~/Kernel/patches, the required patches are 0001-first.patch and folder/0002-second.patch,
 and you want to skip the numbering:
     home/user/Kernel/patches
     *first.patch
@@ -267,9 +267,22 @@ set_variables()
     auto_set_vars
   fi
 
+  KERNEL_ARCHIVE="linux-$KERNEL_VERSION_NUMBER.$ARCHIVE_FORMAT"
+
+  local arr=()
+  local i
+  
+  IFS='.' read -ra ADDR <<< "$KERNEL_VERSION_NUMBER"
+  for i in "${ADDR[@]}"; do
+    arr+=("$i")
+  done
+
+  if [[ "${#arr[@]}" = 2 ]]; then
+      KERNEL_VERSION_NUMBER="$KERNEL_VERSION_NUMBER.0"
+  fi
+
   KERNEL_VERSION="linux-$KERNEL_VERSION_NUMBER"
   KERNEL_SUFFIXED_VERSION="$KERNEL_VERSION_NUMBER"
-  KERNEL_ARCHIVE="$KERNEL_VERSION"."$ARCHIVE_FORMAT"
   BUILD_DIR="${BASE_PATH:?}/${KERNEL_VERSION:?}"
 
   if [[ -n "$OLD_KERNEL_VERSION_NUMBER" ]]; then
@@ -424,8 +437,6 @@ get_answer()
 
 prompt_clean_kernel()
 {
-  local answer
-
   if [[ "$CLEAN_KERNEL" = "all" ]]; then
     get_answer "${BLUE_C}You are about to completely remove ${CYAN_C}$KERNEL_SUFFIXED_VERSION${BLUE_C} and associated components, are you sure?${RESET_C}"
 
@@ -492,11 +503,11 @@ prepare_build()
 
 update_components()
 {
-  local line repoDir repoName
-
   print_header "${BLUE_C}Updating kernel components...${RESET_C}"
 
   find -L "${BASE_PATH}" -type d -name .git | while read -r line; do
+    local repoName repoDir
+
     repoDir=$(dirname "$line")
     repoName=$(basename "$repoDir")
 
@@ -526,7 +537,7 @@ patch_kernel()
 
   print_header "${BLUE_C}Patching from ${YELLOW_C}\"$path\"${RESET_C}"
 
-# Wee need this to support wildcards
+# We need this to support wildcards
 # shellcheck disable=2086
   for ((i = 1; i < "${#arr[@]}"; i++)); do
     patch -p1 < "$path"/${arr[i]} || graceful_error $? "${RED_C}One or more lines were written to a reject file.${RESET_C}"
@@ -631,7 +642,7 @@ error()
 graceful_error()
 {
   local status=$1
-  local message=${2:-"${RED_C}A non-critical error occured!${RESET_C}"}
+  local message=${2:-"${RED_C}A non-critical error occurred!${RESET_C}"}
 
   if [[ "$status" -gt 1 ]]; then
     error "$status"
