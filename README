@@ -110,6 +110,10 @@ Flags:
                                 build and install the newer kernel. No guarantees it will
                                 work 100% correctly. Overwrites every other flag/option.
 
+    --force                     Will force execution of subsequent steps after error.
+                                Not recommended since most steps rely on the successful
+                                completion of previous ones.
+
 Other:
     --help                      Show this text and exit.
     --version                   Show script version.
