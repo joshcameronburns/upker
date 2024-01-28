@@ -365,6 +365,7 @@ auto_set_vars()
     arr+=("$i")
   done
 
+  cmpLatest="$latestVersion"
   if [[ "${#arr[@]}" = 2 ]]; then
       cmpLatest="$latestVersion.0"
   fi
