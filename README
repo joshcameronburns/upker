@@ -107,8 +107,8 @@ Flags:
     --autoupdate                Tries to query the latest available kernel, compares it to
                                 the currently used version, gets the current suffix, gets
                                 the compiler used and uses the information to configure,
-                                build and install the newer kernel. No guarantees it will
-                                work 100% correctly. Overwrites every other flag/option.
+                                build and install the newer kernel. Overwrites every other
+                                flag/option.
 
     --force                     Will force execution of subsequent steps after error.
                                 Not recommended since most steps rely on the successful
