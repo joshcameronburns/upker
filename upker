@@ -46,7 +46,7 @@ CYAN_C=""
 ## Values set by script, do NOT modify
 
 ## Version
-SCRIPT_VERSION="2024.1.2"
+SCRIPT_VERSION="2024.4.1"
 ## Version
 
 print_help()
@@ -462,11 +462,11 @@ prompt_clean_kernel()
     if [[ -n "$KERNEL_VERSION_NUMBER" ]]; then
       get_answer "${BLUE_C}You are about to remove ${YELLOW_C}$BASE_PATH/$KERNEL_ARCHIVE${BLUE_C}, are you sure?${RESET_C}"
 
-      rm -v "$BASE_PATH/$KERNEL_ARCHIVE"
+      rm -v "$ARCHIVE_DIR/$KERNEL_ARCHIVE"
     else
       get_answer "${BLUE_C}You are about to remove all kernel archives, are you sure?${RESET_C}"
 
-      rm -v "$BASE_PATH"/linux-*."$ARCHIVE_FORMAT" 2> /dev/null || echo "no archives to delete"
+      rm -v "$ARCHIVE_DIR"/linux-*."$ARCHIVE_FORMAT" 2> /dev/null || echo "no archives to delete"
     fi
   fi
 
