@@ -357,7 +357,7 @@ auto_set_vars()
 
   IFS='-' read -r currentVer currentSuff <<< "$(uname -r)"
 
-  latestVersion=$(curl -s https://www.kernel.org | grep -A1 latest_link | tail -n1 | grep -Eo '>[^<]+' | grep -Eo '[^>]+')
+  latestVersion=$(curl -s https://www.kernel.org/finger_banner | awk '{print $NF;exit}')
 
   local i arr=()
   IFS='.' read -ra ADDR <<< "$latestVersion"
